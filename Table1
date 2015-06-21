@@ -1,9 +1,5 @@
-#To do: 
-#Add Default Arguments for format and perBy ("wide" and "var" probably)
-#Formatting: Add padding row for variable name (probably while it is still in list form), deal with NA cells
-#Add tests 
+#May or may not be worse than the last draft :/
 
-#Format variables in mtcars to test function
 mtcars$mpgbin <- as.factor(ifelse(mtcars$mpg > 20, ">20 mpg", "<=20 mpg"))
 mtcars$carb <- as.character(mtcars$carb)
 mtcars$cyl <- as.factor(mtcars$cyl)
@@ -13,32 +9,47 @@ Table1 <- function(DF,x,split,format,perBy){
   require(data.table)
   require(reshape2)
   require(plyr)
+  require(dplyr)
   GetIt <- function(DF,x,split,tab,perBy){
+    OUTPUT <- data.frame()
     DT <- data.table(DF)
     index <- DT[,x]
+    DT$names <- names(DT)[index]
     DT$x <- DT[,x, with=FALSE]
-    DT$split <- DT[,as.factor(split),with=FALSE]
-      if(sapply(DT,class)[index]=="factor"){
-          if (perBy == "var"){
-           DT[,.N,by=list(x,split)][,perc := 100*round(N/sum(N),4),by=.(x)][,entry :=paste(N,"(",perc,"%)",sep="")] 
-          } else if (perBy == "split") {
-           DT[,.N,by=list(x,split)][,perc := 100*round(N/sum(N),4),by=.(split)][,entry :=paste(N,"(",perc,"%)",sep="")]   
-          } else
-            stop("D'Oh! perBy argument is invalid. Options are 'var' and 'split'.")
-      } else if (sapply(DT,class)[index]=="numeric") {
-          DT[,.(x=names(DT)[index], Mean=round(mean(x, na.rm=TRUE),2), SD = round(sd(x, na.rm=TRUE),2)), by=split][,entry :=paste(Mean,"(",SD,")",sep="")] 
-      } else {
-          stop("D'Oh! List contains unsupported data type. Factor and numeric are supported")
-      }
+    DT$split <- DT[,as.factor(split),with=FALSE]  
+    if(sapply(DT,class)[index]=="factor"){
+      if (perBy == "var"){
+        DT[,.N,by=list(x,split)][,perc := 100*round(N/sum(N),4),by=.(x)][,entry :=paste(N,"(",perc,"%)",sep="")]     
+      } else if (perBy == "split") {
+        DT[,.N,by=list(x,split)][,perc := 100*round(N/sum(N),4),by=.(split)][,entry :=paste(N,"(",perc,"%)",sep="")]
+      } else
+        stop("D'Oh! perBy argument is invalid. Options are 'var' and 'split'.")
+    } else if (sapply(DT,class)[index]=="numeric") {
+      DT[,.(x=" ", Mean=round(mean(x, na.rm=TRUE),2), SD = round(sd(x, na.rm=TRUE),2)), by=split][,entry :=paste(Mean,"(",SD,")",sep="")]
+    } else {
+      stop("D'Oh! List contains unsupported data type. Factor and numeric are supported")
+    }
   }
-      if (format=="long"){
-        return(lapply(x,FUN=GetIt, DF=DF, split=split,perBy=perBy))
-      } else if (format=="wide"){
-        return(ldply(lapply(lapply(x,FUN=GetIt, DF=DF, split=split, perBy=perBy), x ~ split, value.var="entry", FUN=dcast),data.frame))
-      } else {
-        stop("D'Oh! Format argument is invalid. Options are 'long' and 'wide'.")
-      }
+  DT <- data.table(DF)
+  index <- DT[,x]
+  DT$split <- DT[,as.factor(split),with=FALSE]  
+  if (format=="raw"){
+    return(lapply(x,FUN=GetIt, DF=DF, split=split,perBy=perBy))
+  } else if (format=="table"){
+    head <- sapply(names(DT)[index],list) 
+    data <- lapply(lapply(x,FUN=GetIt, DF=DF, split=split, perBy=perBy), x ~ split, value.var="entry", FUN=dcast)
+    out <- list()                                                                                                                                                    
+    for (i in 1:length(head)) {
+      data[[i]]$x <- as.character(data[[i]]$x)
+      out[[i]] <- rbind(head[[i]], data[[i]])                                                                                                                                             
+    }
+    OUTPUT <- ldply(out,data.frame)
+    colnames(OUTPUT) <- c(" ", levels(DT[,split]))
+    return(OUTPUT)
+  } else {
+    stop("D'Oh! Format argument is invalid. Options are 'raw' and 'table'.")
+  }
 }
 
-Table1(mtcars, c(4,6,7,10,12),"cyl","wide", "var")
+out <- Table1(mtcars, c(4,6,7,10,12),"cyl","table", "var")
 
