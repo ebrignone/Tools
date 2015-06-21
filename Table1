@@ -1,5 +1,3 @@
-#May or may not be worse than the last draft :/
-
 mtcars$mpgbin <- as.factor(ifelse(mtcars$mpg > 20, ">20 mpg", "<=20 mpg"))
 mtcars$carb <- as.character(mtcars$carb)
 mtcars$cyl <- as.factor(mtcars$cyl)
@@ -36,12 +34,20 @@ Table1 <- function(DF,x,split,format,perBy){
   if (format=="raw"){
     return(lapply(x,FUN=GetIt, DF=DF, split=split,perBy=perBy))
   } else if (format=="table"){
-    head <- sapply(names(DT)[index],list) 
+    #head <- cbind(sapply(names(DT)[index],list),
+    #data.frame(matrix(rep((" "),(length(levels(DT[,split]))*length(names(DT)[index]))), ncol=length(levels(DT[,split])))))
+    head <- cbind(names(DT)[index],
+    data.frame(matrix(rep((" "),(length(levels(DT[,split]))*length(names(DT)[index]))), ncol=length(levels(DT[,split])))))
+    headlist <- split(head, rownames(head))
     data <- lapply(lapply(x,FUN=GetIt, DF=DF, split=split, perBy=perBy), x ~ split, value.var="entry", FUN=dcast)
+    print(headlist)
+    print(class(headlist))
+    print(data)
     out <- list()                                                                                                                                                    
-    for (i in 1:length(head)) {
+    for (i in 1:length(headlist)) {
       data[[i]]$x <- as.character(data[[i]]$x)
-      out[[i]] <- rbind(head[[i]], data[[i]])                                                                                                                                             
+      names(headlist[[i]]) <- names(data[[i]]) 
+      out[[i]] <- rbind(headlist[[i]], data[[i]])                                                                                                                                             
     }
     OUTPUT <- ldply(out,data.frame)
     colnames(OUTPUT) <- c(" ", levels(DT[,split]))
@@ -52,4 +58,3 @@ Table1 <- function(DF,x,split,format,perBy){
 }
 
 out <- Table1(mtcars, c(4,6,7,10,12),"cyl","table", "var")
-
