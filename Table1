@@ -3,8 +3,8 @@
 # x <- data.frame
 # y <- list of variables in y for to be included in table. Accepts factor or numeric. Format of y: c(1,2,3)
 # z <- variable in y to stratify results by
-# format <- Output can be returned in a raw list format "raw", or in table format "table"
-# perBy <- Percentages can be tabulated by the stratifying variable "split", or by the row-wise variable "var"
+# format <- Output can be returned in a raw list format "raw", or in table format "table". Defaults to table. 
+# perBy <- Percentages can be tabulated by the stratifying variable "split", or by the row-wise variable "var". Defaults to var. 
 
 #Format Variables in mtcars to use as an example.
 mtcars$mpgbin <- as.factor(ifelse(mtcars$mpg > 20, ">20 mpg", "<=20 mpg"))
