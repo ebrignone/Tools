@@ -1,19 +1,4 @@
-# Table1(x,y,z,format,perBy)
-# 
-# x <- data.frame
-# y <- list of variables in y for to be included in table. Accepts factor or numeric. Format of y: c(1,2,3)
-# z <- variable in y to stratify results by
-# format <- Output can be returned in a raw list format "raw", or in table format "table". Defaults to table. 
-# perBy <- Percentages can be tabulated by the stratifying variable "split", or by the row-wise variable "var". Defaults to var. 
-
-#Format Variables in mtcars to use as an example.
-mtcars$mpgbin <- as.factor(ifelse(mtcars$mpg > 20, ">20 mpg", "<=20 mpg"))
-mtcars$carb <- as.character(mtcars$carb)
-mtcars$cyl <- as.factor(mtcars$cyl)
-mtcars$gear <- as.factor(mtcars$gear)
-
-#Do it
-Table1 <- function(DF,x,split=NULL,format="table",perBy="var"){
+Table1 <- function(DF,x,split,format,perBy){
   require(data.table)
   require(reshape2)
   require(plyr)
@@ -45,8 +30,9 @@ Table1 <- function(DF,x,split=NULL,format="table",perBy="var"){
     return(lapply(x,FUN=GetIt, DF=DF, split=split,perBy=perBy))
   } else if (format=="table"){
     head <- cbind(names(DT)[index],
-    data.frame(matrix(rep((" "),(length(levels(DT[,split]))*length(names(DT)[index]))), ncol=length(levels(DT[,split])))))
-    headlist <- split(head, rownames(head))
+    data.frame(matrix(rep((" "),(length(levels(DT[,split]))*length(names(DT)[index]))), ncol=length(levels(DT[,split])))))  
+    head[,1] <- factor(head[,1], levels=unique(head[,1]))
+    headlist <- split(head, head[,1])
     data <- lapply(lapply(x,FUN=GetIt, DF=DF, split=split, perBy=perBy), x ~ split, value.var="entry", FUN=dcast)
     out <- list()                                                                                                                                                    
     for (i in 1:length(headlist)) {
@@ -61,5 +47,3 @@ Table1 <- function(DF,x,split=NULL,format="table",perBy="var"){
     stop("D'Oh! Format argument is invalid. Options are 'raw' and 'table'.")
   }
 }
-
-out <- Table1(mtcars, c(4,6,7,10,12),"cyl")
